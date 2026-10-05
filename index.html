@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Match Maker ❤</title>
+<style>
+:root{--bg1:#ffe3ec;--bg2:#ffc2d6;--card:#ffffffcc;--text:#4a1230;--accent:#e0245e;--muted:#8a4a66;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg1:#2a0a1a;--bg2:#4a1230;--card:#ffffff14;--text:#ffe3ec;--muted:#e6a3bd}}
+:root[data-theme="dark"]{--bg1:#2a0a1a;--bg2:#4a1230;--card:#ffffff14;--text:#ffe3ec;--muted:#e6a3bd}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text);background:linear-gradient(160deg,var(--bg1),var(--bg2));overflow-x:hidden}
+.card{width:100%;max-width:420px;background:var(--card);backdrop-filter:blur(8px);border-radius:24px;padding:28px 22px;text-align:center;box-shadow:0 12px 40px #e0245e33}
+h1{margin:0 0 4px;font-size:1.7rem}
+p.sub{margin:0 0 18px;color:var(--muted)}
+input{width:100%;padding:13px 14px;margin:6px 0;border:2px solid transparent;border-radius:14px;font-size:1rem;background:#fff;color:#4a1230;outline:none}
+input:focus{border-color:var(--accent)}
+.amp{font-size:1.4rem;color:var(--accent)}
+button.go{margin-top:12px;width:100%;padding:14px;border:0;border-radius:14px;font-size:1.05rem;font-weight:700;color:#fff;background:var(--accent);cursor:pointer;transition:transform .15s}
+button.go:active{transform:scale(.96)}
+#error{min-height:1.4em;margin-top:10px;color:#d4002f;font-weight:600}
+/* HEART: an SVG that "pumps" with a keyframe animation */
+#heart{width:140px;height:140px;margin:10px auto 0;cursor:pointer;display:none;filter:drop-shadow(0 6px 14px #e0245e88);user-select:none}
+#heart.show{display:block;animation:pump .8s ease-in-out infinite}
+@keyframes pump{0%,100%{transform:scale(1)}15%{transform:scale(1.18)}30%{transform:scale(1)}45%{transform:scale(1.12)}60%{transform:scale(1)}}
+#score{font-size:3rem;font-weight:800;color:var(--accent);margin-top:4px}
+#msg{font-size:1.05rem;min-height:2.6em}
+.hint{font-size:.8rem;color:var(--muted)}
+/* little hearts that pop out and float away */
+.pop{position:fixed;pointer-events:none;z-index:9;font-size:22px;animation:floatUp 1.4s ease-out forwards}
+@keyframes floatUp{0%{opacity:1;transform:translate(0,0) scale(.4)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1.3) rotate(var(--r))}}
+</style>
+</head>
+<body>
+<main class="card">
+  <h1>💘 Match Maker</h1>
+  <p class="sub">Enter two names to see your love score</p>
+
+  <input id="n1" placeholder="Your name" maxlength="30" autocomplete="off">
+  <div class="amp">♥</div>
+  <input id="n2" placeholder="Your lover's name" maxlength="30" autocomplete="off">
+  <button class="go" id="btn">Check our love ❤</button>
+  <div id="error"></div>
+
+  <svg id="heart" viewBox="0 0 24 24" aria-label="heart">
+    <path fill="#e0245e" d="M12 21s-7.5-4.9-9.7-9.4C.6 8.1 2.6 4 6.4 4c2 0 3.7 1.1 4.6 2.7h2C13.900 5.100 15.600 4 17.600 4c3.800 0 5.800 4.100 4.100 7.600C19.500 16.100 12 21 12 21z"/>
+    <path fill="#ffffff55" d="M6.500 6.200c-1.600.4-2.600 2-2.200 3.600.1.400.6.500.8.200.1-.2.100-.3.100-.5-.3-1.100.3-2.200 1.300-2.600.4-.1.400-.7 0-.7z"/>
+  </svg>
+  <div id="score"></div>
+  <div id="msg"></div>
+  <div class="hint" id="hint"></div>
+</main>
+
+<script>
+const n1 = document.getElementById('n1'), n2 = document.getElementById('n2');
+const err = document.getElementById('error'), heart = document.getElementById('heart');
+const scoreEl = document.getElementById('score'), msgEl = document.getElementById('msg'), hint = document.getElementById('hint');
+
+// Messages depending on the score
+function message(s){
+  if (s >= 90) return "Soulmates! Perfect match 💞";
+  if (s >= 70) return "Great love! You two are really close 😍";
+  if (s >= 50) return "Good chemistry. Keep growing together 🌹";
+  if (s >= 30) return "Needs some effort, but love can win 💪";
+  return "Opposites attract... maybe? 😅";
+}
+
+// Pop small hearts from a point (x, y) on the screen
+function burst(x, y, count = 14){
+  const icons = ['❤️','💖','💗','💕','💘'];
+  for (let i = 0; i < count; i++){
+    const h = document.createElement('span');
+    h.className = 'pop';
+    h.textContent = icons[Math.floor(Math.random() * icons.length)];
+    h.style.left = x + 'px'; h.style.top = y + 'px';
+    h.style.setProperty('--dx', (Math.random() * 240 - 120) + 'px');
+    h.style.setProperty('--dy', (-Math.random() * 200 - 40) + 'px');
+    h.style.setProperty('--r', (Math.random() * 90 - 45) + 'deg');
+    document.body.appendChild(h);
+    setTimeout(() => h.remove(), 1500);
+  }
+}
+
+// Count the number up from 0 for a nice effect
+function countUp(target){
+  let cur = 0;
+  const t = setInterval(() => {
+    cur += Math.ceil(target / 25);
+    if (cur >= target){ cur = target; clearInterval(t); }
+    scoreEl.textContent = cur + '%';
+  }, 40);
+}
+
+document.getElementById('btn').addEventListener('click', () => {
+  const a = n1.value.trim(), b = n2.value.trim();
+  err.textContent = '';
+
+  // Validation: no empty names, and the two names can't be the same
+  if (!a || !b){ err.textContent = 'Please enter both names.'; return; }
+  if (a.toLowerCase() === b.toLowerCase()){ err.textContent = 'Names must be different.'; return; }
+
+  const score = Math.floor(Math.random() * 101); // random 0 - 100
+  heart.classList.remove('show'); void heart.offsetWidth; heart.classList.add('show'); // restart animation
+  countUp(score);
+  msgEl.textContent = a + ' ♥ ' + b + ': ' + message(score);
+  hint.textContent = 'Tap the heart! 💓';
+
+  const r = heart.getBoundingClientRect();
+  burst(r.left + r.width / 2, r.top + r.height / 2, 20);
+});
+
+// Clicking the heart makes more hearts pop
+heart.addEventListener('click', e => burst(e.clientX, e.clientY, 10));
+</script>
+</body>
+</html>
